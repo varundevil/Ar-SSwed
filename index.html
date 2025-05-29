@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>MindAR Video AR</title>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-three.prod.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-three.prod.css" rel="stylesheet" />
+  <style>
+    body { margin: 0; overflow: hidden; font-family: sans-serif; background: #000; color: #fff; text-align: center; }
+    #ar-container { width: 100vw; height: 100vh; display: none; }
+    #start-button { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 1em 2em; font-size: 1.2em; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; z-index: 10; }
+    #error-message { position: absolute; top: 1em; left: 50%; transform: translateX(-50%); background: rgba(255,0,0,0.8); padding: 0.8em 1.2em; border-radius: 6px; display: none; z-index: 10; }
+  </style>
+</head>
+<body>
+
+  <!-- 🚀 Start Button -->
+  <button id="start-button">Start AR</button>
+
+  <!-- ❗ Error Message -->
+  <div id="error-message">Camera permission denied or unavailable</div>
+
+  <!-- 🖼️ AR Container -->
+  <div id="ar-container"></div>
+
+  <script>
+    const startButton = document.getElementById("start-button");
+    const errorMessage = document.getElementById("error-message");
+    const arContainer = document.getElementById("ar-container");
+
+    let video;
+
+    startButton.addEventListener("click", async () => {
+      startButton.style.display = "none";
+      arContainer.style.display = "block";
+
+      try {
+        const mindarThree = new window.MINDAR.IMAGE.MindARThree({
+          container: arContainer,
+          imageTargetSrc: "./mindar/image-target.mind", // 📌 CHANGE: your mind file path
+        });
+
+        const { renderer, scene, camera } = mindarThree;
+        const anchor = mindarThree.addAnchor(0);
+
+        // 📽️ Setup video
+        video = document.createElement("video");
+        video.src = "./assets/video.mp4"; // 📌 CHANGE: your video path
+        video.crossOrigin = "anonymous";
+        video.loop = true;
+        video.preload = "auto";
+        video.playsInline = true;
+
+        const texture = new THREE.VideoTexture(video);
+        const geometry = new THREE.PlaneGeometry(1, 0.5625); // 16:9 video
+        const material = new THREE.MeshBasicMaterial({ map: texture });
+        const videoMesh = new THREE.Mesh(geometry, material);
+        videoMesh.rotation.x = -Math.PI / 2;
+
+        anchor.group.add(videoMesh);
+
+        anchor.onTargetFound = () => {
+          video.play();
+        };
+        anchor.onTargetLost = () => {
+          video.pause();
+        };
+
+        await mindarThree.start();
+        renderer.setAnimationLoop(() => {
+          renderer.render(scene, camera);
+        });
+      } catch (err) {
+        console.error("AR Init Error:", err);
+        errorMessage.style.display = "block";
+        startButton.style.display = "block";
+        arContainer.style.display = "none";
+      }
+    });
+  </script>
+</body>
+</html>
