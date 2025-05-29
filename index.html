@@ -38,7 +38,7 @@
       try {
         const mindarThree = new window.MINDAR.IMAGE.MindARThree({
           container: arContainer,
-          imageTargetSrc: "./mindar/image-target.mind", // 📌 CHANGE: your mind file path
+          imageTargetSrc: "./targets.mind", // 📌 CHANGE: your mind file path
         });
 
         const { renderer, scene, camera } = mindarThree;
@@ -46,7 +46,7 @@
 
         // 📽️ Setup video
         video = document.createElement("video");
-        video.src = "./assets/video.mp4"; // 📌 CHANGE: your video path
+        video.src = "./video.mp4"; // 📌 CHANGE: your video path
         video.crossOrigin = "anonymous";
         video.loop = true;
         video.preload = "auto";
