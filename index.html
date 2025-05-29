@@ -24,60 +24,82 @@
   <!-- 🖼️ AR Container -->
   <div id="ar-container"></div>
 
-  <script>
-    const startButton = document.getElementById("start-button");
-    const errorMessage = document.getElementById("error-message");
-    const arContainer = document.getElementById("ar-container");
+ <script>
+  const startButton = document.getElementById("start-button");
+  const errorMessage = document.getElementById("error-message");
+  const arContainer = document.getElementById("ar-container");
 
-    let video;
+  let video;
 
-    startButton.addEventListener("click", async () => {
-      startButton.style.display = "none";
-      arContainer.style.display = "block";
+  async function requestCameraPermission() {
+    try {
+      // Ask for camera access
+      await navigator.mediaDevices.getUserMedia({ video: true });
+      return true;
+    } catch (err) {
+      console.warn("Camera access error:", err);
+      return false;
+    }
+  }
 
-      try {
-        const mindarThree = new window.MINDAR.IMAGE.MindARThree({
-          container: arContainer,
-          imageTargetSrc: "./targets.mind", // 📌 CHANGE: your mind file path
-        });
+  startButton.addEventListener("click", async () => {
+    startButton.style.display = "none";
 
-        const { renderer, scene, camera } = mindarThree;
-        const anchor = mindarThree.addAnchor(0);
+    const hasPermission = await requestCameraPermission();
+    if (!hasPermission) {
+      errorMessage.textContent = "❗ Camera permission denied or unavailable. Please enable it and try again.";
+      errorMessage.style.display = "block";
+      startButton.style.display = "block";
+      return;
+    }
 
-        // 📽️ Setup video
-        video = document.createElement("video");
-        video.src = "./video.mp4"; // 📌 CHANGE: your video path
-        video.crossOrigin = "anonymous";
-        video.loop = true;
-        video.preload = "auto";
-        video.playsInline = true;
+    arContainer.style.display = "block";
 
-        const texture = new THREE.VideoTexture(video);
-        const geometry = new THREE.PlaneGeometry(1, 0.5625); // 16:9 video
-        const material = new THREE.MeshBasicMaterial({ map: texture });
-        const videoMesh = new THREE.Mesh(geometry, material);
-        videoMesh.rotation.x = -Math.PI / 2;
+    try {
+      const mindarThree = new window.MINDAR.IMAGE.MindARThree({
+        container: arContainer,
+        imageTargetSrc: "./targets.mind", // ✅ keep this path correct
+      });
 
-        anchor.group.add(videoMesh);
+      const { renderer, scene, camera } = mindarThree;
+      const anchor = mindarThree.addAnchor(0);
 
-        anchor.onTargetFound = () => {
-          video.play();
-        };
-        anchor.onTargetLost = () => {
-          video.pause();
-        };
+      // 🎥 Video Setup
+      video = document.createElement("video");
+      video.src = "./video.mp4"; // ✅ your video file path
+      video.crossOrigin = "anonymous";
+      video.loop = true;
+      video.preload = "auto";
+      video.playsInline = true;
 
-        await mindarThree.start();
-        renderer.setAnimationLoop(() => {
-          renderer.render(scene, camera);
-        });
-      } catch (err) {
-        console.error("AR Init Error:", err);
-        errorMessage.style.display = "block";
-        startButton.style.display = "block";
-        arContainer.style.display = "none";
-      }
-    });
-  </script>
+      const texture = new THREE.VideoTexture(video);
+      const geometry = new THREE.PlaneGeometry(1, 0.5625);
+      const material = new THREE.MeshBasicMaterial({ map: texture });
+      const videoMesh = new THREE.Mesh(geometry, material);
+      videoMesh.rotation.x = -Math.PI / 2;
+
+      anchor.group.add(videoMesh);
+
+      anchor.onTargetFound = () => {
+        video.play();
+      };
+      anchor.onTargetLost = () => {
+        video.pause();
+      };
+
+      await mindarThree.start();
+      renderer.setAnimationLoop(() => {
+        renderer.render(scene, camera);
+      });
+
+    } catch (err) {
+      console.error("MindAR Error:", err);
+      errorMessage.textContent = "❗ Failed to initialize AR.";
+      errorMessage.style.display = "block";
+      startButton.style.display = "block";
+      arContainer.style.display = "none";
+    }
+  });
+</script>
 </body>
 </html>
